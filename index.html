@@ -81,7 +81,7 @@
     <!-- IL CODICE REACT CONVERTITO IN JS NATÌVO -->
     <script>
 // Usiamo i namespace React e ReactDOM come variabili globali
-const { useState, useEffect, useMemo, useCallback } = React;
+const { useState, useEffect, useMemo, useCallback, useRef } = React;
 const ReactDOM = window.ReactDOM;
 
 // -------------------------------------------------------------------------------------
@@ -124,6 +124,11 @@ const XIcon = ({ className = "w-5 h-5" }) => React.createElement("svg", { xmlns:
     React.createElement("line", { x1: "18", y1: "6", x2: "6", y2: "18" }),
     React.createElement("line", { x1: "6", y1: "6", x2: "18", y2: "18" })
 );
+const ClockIcon = ({ className = "w-5 h-5" }) => React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", width: "24", height: "24", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", className: className },
+    React.createElement("circle", { cx: "12", cy: "12", r: "10" }),
+    React.createElement("polyline", { points: "12 6 12 12 16 14" })
+);
+
 // -------------------------------------------------------------------------------------
 
 
@@ -138,6 +143,10 @@ const COL_INDEX = {
     EXPIRY: 5,      // Scadenza
     DESCRIPTION: 6  // Note
 };
+
+// --- CONFIGURAZIONE RATE LIMITER ---
+const RATE_LIMIT = 5; // Massimo 5 click
+const TIME_WINDOW_MS = 60 * 1000; // In una finestra di 60 secondi (1 minuto)
 
 /**
  * Controlla lo stato di scadenza di un codice.
@@ -217,7 +226,7 @@ const Modal = ({ title, content, onClose }) => {
     );
 };
 
-// Contenuto per Termini e Condizioni AGGIORNATO
+// Contenuto per Termini e Condizioni
 const TermsContent = () => React.createElement(React.Fragment, null,
     React.createElement('p', null, 
         React.createElement('strong', null, "1. Accettazione dei Termini"),
@@ -293,6 +302,32 @@ const App = () => {
 
     // Stato per l'animazione di generazione
     const [showCodeAnimation, setShowCodeAnimation] = useState(false);
+    
+    // Riferimento per lo storico dei click (rate limiter)
+    // Non scatena un re-render quando viene aggiornato
+    const clickTimestamps = useRef([]);
+
+    // Funzione helper per l'applicazione del Rate Limiter
+    const checkRateLimit = () => {
+        const now = Date.now();
+        // Rimuove i timestamp più vecchi di TIME_WINDOW_MS
+        clickTimestamps.current = clickTimestamps.current.filter(timestamp => now - timestamp < TIME_WINDOW_MS);
+        
+        if (clickTimestamps.current.length >= RATE_LIMIT) {
+            return {
+                allowed: false,
+                timeLeft: (TIME_WINDOW_MS - (now - clickTimestamps.current[0]))
+            };
+        }
+        
+        return { allowed: true, timeLeft: 0 };
+    };
+
+    // Aggiunge il timestamp se l'operazione è permessa
+    const recordClick = () => {
+        const now = Date.now();
+        clickTimestamps.current.push(now);
+    };
 
     // Robust CSV line parser to handle quoted cells
     const parseCSVLine = (text) => {
@@ -382,6 +417,28 @@ const App = () => {
     const generateCode = () => {
         if (!selectedBrand) return;
 
+        // --- APPLICAZIONE RATE LIMITER ---
+        const { allowed, timeLeft } = checkRateLimit();
+        if (!allowed) {
+            // Se il limite è superato, mostra un messaggio di rate limit
+            const secondsLeft = Math.ceil(timeLeft / 1000);
+            setCurrentCode({
+                brand: 'Rate Limit',
+                code: `Aspetta ${secondsLeft} secondi...`,
+                value: 'Limitazione',
+                telegram: 'Sistema',
+                expiry: 'N/D',
+                description: `Hai superato il limite di ${RATE_LIMIT} click al minuto. Riprova tra ${secondsLeft} secondi.`,
+                isRateLimited: true,
+            });
+            setCopySuccess(false);
+            // Non innescare l'animazione di "codice trovato"
+            return; 
+        }
+
+        // --- Generazione codice (solo se permesso) ---
+        recordClick(); // Registra il click
+        
         const pool = data.filter(item => item.brand === selectedBrand);
 
         if (pool.length === 0) {
@@ -422,7 +479,7 @@ const App = () => {
 
     // 4. Copy to Clipboard
     const copyToClipboard = () => {
-        if (!currentCode || currentCode.code === 'Nessun Codice Attivo') return;
+        if (!currentCode || currentCode.code === 'Nessun Codice Attivo' || currentCode.isRateLimited) return;
         
         // Se è un link, copiamo il link
         const textToCopy = currentCode.code;
@@ -532,8 +589,8 @@ const App = () => {
                     // 1. AREA DI VISUALIZZAZIONE PRINCIPALE
                     React.createElement('div', { className: `
                         relative border-2 rounded-xl p-6 flex flex-col items-center justify-center text-center min-h-[150px] transition-all duration-300
-                        ${currentCode ? 'border-indigo-100 bg-indigo-50/50' : 'border-dashed border-slate-200 bg-slate-50/50'}
-                        ${showCodeAnimation && currentCode ? 'animate-pulse-once' : ''}
+                        ${currentCode ? (currentCode.isRateLimited ? 'border-amber-100 bg-amber-50/50' : 'border-indigo-100 bg-indigo-50/50') : 'border-dashed border-slate-200 bg-slate-50/50'}
+                        ${showCodeAnimation && currentCode && !currentCode.isRateLimited ? 'animate-pulse-once' : ''}
                     `},
                         !currentCode ? (
                             React.createElement('div', { className: "text-slate-400 flex flex-col items-center" },
@@ -544,8 +601,13 @@ const App = () => {
                             )
                         ) : (
                             React.createElement('div', { className: "w-full space-y-3 animate-in fade-in duration-500" },
-                                React.createElement('span', { className: "inline-block px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs font-bold uppercase tracking-wider mb-2" },
-                                    currentCode.brand
+                                // Badge
+                                React.createElement('span', { className: `inline-block px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-2 ${
+                                    currentCode.isRateLimited 
+                                        ? 'bg-amber-100 text-amber-700' 
+                                        : 'bg-indigo-100 text-indigo-700'
+                                }` },
+                                    currentCode.isRateLimited ? 'Limite Raggiunto' : currentCode.brand
                                 ),
                                 
                                 // CONTENUTO PRINCIPALE: CODICE O LINK
@@ -553,16 +615,18 @@ const App = () => {
                                     const codeText = currentCode.code;
                                     const isCodeLink = isUrl(codeText);
                                     const isExpired = codeText === 'Nessun Codice Attivo';
-
+                                    const isRateLimited = currentCode.isRateLimited;
+                                    
                                     // Elemento principale del codice/link
                                     const codeElement = React.createElement('h2', { 
-                                        className: `text-2xl font-black break-all ${isExpired ? 'text-red-500' : (isCodeLink ? 'text-primary-indigo code-link' : 'text-slate-800')}`
+                                        className: `text-2xl font-black break-all ${isRateLimited ? 'text-amber-600' : (isExpired ? 'text-red-500' : (isCodeLink ? 'text-primary-indigo code-link' : 'text-slate-800'))}`
                                     }, codeText);
 
                                     // L'elemento cliccabile
                                     let clickableElement;
 
-                                    if (isExpired) {
+                                    if (isExpired || isRateLimited) {
+                                        // Nessuna interazione per i messaggi di errore/scadenza
                                         clickableElement = codeElement;
                                     } else if (isCodeLink) {
                                         // Se è un link, lo avvolgiamo in <a>
@@ -594,8 +658,8 @@ const App = () => {
                         )
                     ),
                     
-                    // 2. CARD DETTAGLI AGGIUNTIVI
-                    currentCode && React.createElement('div', { className: "space-y-4 pt-4 animate-in fade-in duration-500" },
+                    // 2. CARD DETTAGLI AGGIUNTIVI (Nasconde se Rate Limited)
+                    currentCode && !currentCode.isRateLimited && React.createElement('div', { className: "space-y-4 pt-4 animate-in fade-in duration-500" },
                         React.createElement('h3', { className: "text-sm font-bold text-slate-700 uppercase tracking-wider border-b border-slate-200 pb-2" }, "Dettagli del Codice"),
                         
                         React.createElement('div', { className: "grid grid-cols-2 gap-3" },
