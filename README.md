@@ -27,4 +27,4 @@ Miglioramenti al Codice: Per proporre miglioramenti al codice HTML/React, puoi a
 
 # ⭐ Credits
 
-Realizzato con ❤️ per la Community Italiana (@offertemercatolibero)[https://t.me/offertemercatolibero].
+Realizzato con ❤️ per la Community italiana [@offertemercatolibero](https://t.me/offertemercatolibero).
