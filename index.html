@@ -19,13 +19,37 @@
             fontFamily: {
               sans: ['Inter', 'sans-serif'],
             },
-          }
+            colors: {
+                // Definisco colori custom per consistenza
+                'primary-indigo': '#4f46e5', // indigo-600
+                'secondary-cyan': '#06b6d4', // cyan-500
+            }
+          },
         }
       }
     </script>
     <style>
         /* Imposta il font Inter come predefinito */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+
+        /* Animazione per il focus sugli elementi principali */
+        @keyframes pulse-once {
+            0% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(79, 70, 229, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0); }
+        }
+        .animate-pulse-once {
+            animation: pulse-once 1.5s ease-out 1;
+        }
+
+        /* Stile specifico per il codice/link quando è un link cliccabile */
+        .code-link {
+            text-decoration: underline;
+            color: #4f46e5; /* primary-indigo */
+        }
+        .code-link:hover {
+            color: #3730a3; /* indigo-800 */
+        }
     </style>
 </head>
 <body>
@@ -46,6 +70,14 @@ const ZapIcon = ({ className = "w-6 h-6" }) => React.createElement("svg", { xmln
 const CopyIcon = ({ className = "w-5 h-5" }) => React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", width: "24", height: "24", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", className: className },
     React.createElement("rect", { width: "13", height: "13", x: "9", y: "9", rx: "2", ry: "2" }),
     React.createElement("path", { d: "M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" })
+);
+const LinkIcon = ({ className = "w-5 h-5" }) => React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", width: "24", height: "24", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", className: className },
+    React.createElement("path", { d: "M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.74 1.74" }),
+    React.createElement("path", { d: "M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" })
+);
+const DollarSignIcon = ({ className = "w-4 h-4" }) => React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", width: "24", height: "24", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", className: className },
+    React.createElement("line", { x1: "12", y1: "1", x2: "12", y2: "23" }),
+    React.createElement("path", { d: "M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" })
 );
 const AlertCircleIcon = ({ className = "w-5 h-5" }) => React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", width: "24", height: "24", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", className: className },
     React.createElement("circle", { cx: "12", cy: "12", r: "10" }),
@@ -79,14 +111,19 @@ const SHEET_ID = '1CtQ3E_nUmxKNipJNrirwlYwmRRzmxs9JitFTRIdvhU0';
 const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv`;
 
 const COL_INDEX = {
-  BRAND: 1,       // Fornitore
-  CODE: 2,        // Codice o Link
-  VALUE: 3,       // Sconto
-  TELEGRAM: 4,    // Contatto telegram
-  EXPIRY: 5,      // Scadenza
-  DESCRIPTION: 6  // Note
+    BRAND: 1,       // Fornitore
+    CODE: 2,        // Codice o Link
+    VALUE: 3,       // Sconto
+    TELEGRAM: 4,    // Contatto telegram
+    EXPIRY: 5,      // Scadenza
+    DESCRIPTION: 6  // Note
 };
 
+/**
+ * Controlla lo stato di scadenza di un codice.
+ * @param {string} expiryDateStr - La stringa della data di scadenza (es. "31/12/2025").
+ * @returns {{status: string, isExpired: boolean, display: string}} - Stato e data formattata.
+ */
 const checkExpiryStatus = (expiryDateStr) => {
     if (!expiryDateStr || expiryDateStr.toLowerCase().includes('nessuna scadenza') || expiryDateStr.trim() === '') {
         return { status: 'Attivo', isExpired: false, display: 'Nessuna' };
@@ -110,348 +147,413 @@ const checkExpiryStatus = (expiryDateStr) => {
     }
 };
 
+/**
+ * Controlla se una stringa è un URL valido (inizia con http(s)://).
+ * @param {string} str - La stringa da controllare.
+ * @returns {boolean} - True se è un link.
+ */
+const isUrl = (str) => {
+    return str && (str.startsWith('http://') || str.startsWith('https://'));
+};
+
 
 const App = () => {
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [selectedBrand, setSelectedBrand] = useState('');
-  const [currentCode, setCurrentCode] = useState(null);
-  const [copySuccess, setCopySuccess] = useState(false);
-  
-  const TELEGRAM_LINK = "https://t.me/offertemercatolibero";
-  const TELEGRAM_HANDLE = "@offertemercatolibero";
+    const [data, setData] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [selectedBrand, setSelectedBrand] = useState('');
+    const [currentCode, setCurrentCode] = useState(null);
+    const [copySuccess, setCopySuccess] = useState(false);
+    
+    const TELEGRAM_LINK = "https://t.me/offertemercatolibero";
+    const TELEGRAM_HANDLE = "@offertemercatolibero";
 
-  // Robust CSV line parser to handle quoted cells
-  const parseCSVLine = (text) => {
-    const result = [];
-    let cell = '';
-    let inQuotes = false;
+    // Stato per l'animazione di generazione
+    const [showCodeAnimation, setShowCodeAnimation] = useState(false);
 
-    for (let i = 0; i < text.length; i++) {
-      const char = text[i];
-      if (char === '"') {
-        inQuotes = !inQuotes;
-      } else if (char === ',' && !inQuotes) {
-        // Trim and remove surrounding quotes if present, handle escaped quotes
+    // Robust CSV line parser to handle quoted cells
+    const parseCSVLine = (text) => {
+        const result = [];
+        let cell = '';
+        let inQuotes = false;
+
+        for (let i = 0; i < text.length; i++) {
+            const char = text[i];
+            if (char === '"') {
+                // Toggle quote state
+                inQuotes = !inQuotes;
+            } else if (char === ',' && !inQuotes) {
+                // Delimiter found outside quotes
+                // Trim and remove surrounding quotes if present, handle escaped quotes
+                result.push(cell.trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
+                cell = '';
+            } else {
+                cell += char;
+            }
+        }
+        // Push last cell
         result.push(cell.trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
-        cell = '';
-      } else {
-        cell += char;
-      }
-    }
-    result.push(cell.trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
-    return result;
-  };
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch(SHEET_URL, { cache: 'no-store' });
-        
-        if (!response.ok) {
-            throw new Error(`Errore di connessione (${response.status})`);
-        }
-        
-        const text = await response.text();
-        const lines = text.split('\n').filter(line => line.trim() !== '');
-
-        if (lines.length < 2) throw new Error("File vuoto o non leggibile.");
-
-        const parsedData = lines.slice(1).map(line => {
-          const cols = parseCSVLine(line);
-          // Minimum column check
-          if (cols.length <= COL_INDEX.DESCRIPTION) return null;
-          
-          return {
-            brand: cols[COL_INDEX.BRAND] || 'N/D',
-            code: cols[COL_INDEX.CODE] || 'N/D',
-            value: cols[COL_INDEX.VALUE] || 'N/D',
-            telegram: cols[COL_INDEX.TELEGRAM] || 'Anonimo',
-            expiry: cols[COL_INDEX.EXPIRY] || '',
-            description: cols[COL_INDEX.DESCRIPTION] || ''
-          };
-        }).filter(item => item && item.brand !== 'N/D' && item.code !== 'N/D'); 
-
-        if (parsedData.length === 0) throw new Error("Nessun codice valido trovato.");
-
-        setData(parsedData);
-        setLoading(false);
-      } catch (err) {
-        console.error("Errore caricamento:", err);
-        if (err.message.includes('Failed to fetch') || err.message.includes('Failed to read')) {
-            setError("Errore CORS o di Rete. Assicurati che il file sia condiviso con 'Chiunque abbia il link'.");
-        } else {
-            setError(err.message);
-        }
-        setLoading(false);
-      }
+        return result;
     };
 
-    fetchData();
-  }, []);
+    // 1. Fetch Data
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                setLoading(true);
+                const response = await fetch(SHEET_URL, { cache: 'no-store' });
+                
+                if (!response.ok) {
+                    throw new Error(`Errore di connessione (${response.status})`);
+                }
+                
+                const text = await response.text();
+                const lines = text.split('\n').filter(line => line.trim() !== '');
 
-  const brands = useMemo(() => {
-    // Only show brands that have at least one active (non-expired) code
-    const activeBrands = data.filter(item => !checkExpiryStatus(item.expiry).isExpired).map(item => item.brand);
-    const uniqueActive = new Set(activeBrands);
-    return Array.from(uniqueActive).sort();
-    
-  }, [data]);
+                // Assuming the first line is header and skipping it
+                if (lines.length < 2) throw new Error("File vuoto o non leggibile.");
 
-  const generateCode = () => {
-    if (!selectedBrand) return;
+                const parsedData = lines.slice(1).map(line => {
+                    const cols = parseCSVLine(line);
+                    // Minimum column check
+                    if (cols.length <= COL_INDEX.DESCRIPTION) return null;
+                    
+                    return {
+                        brand: cols[COL_INDEX.BRAND] || 'N/D',
+                        code: cols[COL_INDEX.CODE] || 'N/D',
+                        value: cols[COL_INDEX.VALUE] || 'N/D',
+                        telegram: cols[COL_INDEX.TELEGRAM] || 'Anonimo',
+                        expiry: cols[COL_INDEX.EXPIRY] || '',
+                        description: cols[COL_INDEX.DESCRIPTION] || ''
+                    };
+                }).filter(item => item && item.brand !== 'N/D' && item.code !== 'N/D'); 
 
-    const pool = data.filter(item => item.brand === selectedBrand);
+                if (parsedData.length === 0) throw new Error("Nessun codice valido trovato.");
 
-    if (pool.length === 0) {
-      console.error("Nessun codice disponibile per questo fornitore.");
-      return;
-    }
+                setData(parsedData);
+                setLoading(false);
+            } catch (err) {
+                console.error("Errore caricamento:", err);
+                if (err.message.includes('Failed to fetch') || err.message.includes('Failed to read')) {
+                    setError("Errore CORS o di Rete. Assicurati che il file sia condiviso con 'Chiunque abbia il link'.");
+                } else {
+                    setError(err.message);
+                }
+                setLoading(false);
+            }
+        };
 
-    const activePool = pool.filter(item => !checkExpiryStatus(item.expiry).isExpired);
-    
-    if (activePool.length === 0) {
-        console.warn("Nessun codice ATTIVO disponibile per questo fornitore.");
-        setCurrentCode({
-            brand: selectedBrand,
-            code: 'Nessun Codice Attivo',
-            value: 'N/D',
-            telegram: 'Sistema',
-            expiry: 'Oggi',
-            description: 'Tutti i codici di questo fornitore risultano scaduti.'
-        });
-        setCopySuccess(false);
-        return;
-    }
-    
-    const selectionPool = activePool;
-    const randomIndex = Math.floor(Math.random() * selectionPool.length);
-    const selected = selectionPool[randomIndex];
-    setCurrentCode(selected);
-    setCopySuccess(false);
-  };
+        fetchData();
+    }, []);
 
-  const copyToClipboard = () => {
-    if (!currentCode || currentCode.code === 'Nessun Codice Attivo') return;
-    try {
-        // Use document.execCommand('copy') for maximum compatibility in iframe environment
-        const tempInput = document.createElement('textarea');
-        tempInput.value = currentCode.code;
-        document.body.appendChild(tempInput);
-        tempInput.select();
-        document.execCommand('copy');
-        document.body.removeChild(tempInput);
-        setCopySuccess(true);
-        setTimeout(() => setCopySuccess(false), 2000);
-    } catch (err) {
-        console.error('Impossibile copiare il testo:', err);
-    }
-  };
-
-  // Funzione TTS (Text-to-Speech) - Mantenuta ma non usata
-  const speakCode = useCallback(async (item) => {
-    // TTS implementation is resource heavy and skipped for stability in this context
-    console.log("TTS function called but skipped for stability.");
-  }, []);
-
-  // Componente per visualizzare i dettagli (tradotto in JS nativo)
-  const DetailCard = ({ icon: Icon, title, value, colorClass = 'text-slate-600', isExpired = false }) => {
-    const cardClass = `p-4 rounded-lg border shadow-sm ${isExpired ? 'bg-red-50 border-red-200' : 'bg-white border-slate-100'}`;
-    const valueClass = `text-sm font-medium ${isExpired ? 'text-red-600 font-bold' : 'text-slate-800'}`;
-
-    return React.createElement('div', { className: cardClass },
-        React.createElement('div', { className: 'flex items-center space-x-2 mb-1' },
-            React.createElement(Icon, { className: `w-4 h-4 ${colorClass}` }),
-            React.createElement('p', { className: 'text-xs uppercase text-slate-400 font-semibold' }, title)
-        ),
-        React.createElement('p', { className: valueClass }, value)
-    );
-  };
-
-  // Funzione principale App (tradotta in JS nativo)
-  return React.createElement('div', { className: "min-h-screen bg-slate-50 flex items-center justify-center p-4 font-sans text-slate-800" },
-    React.createElement('div', { className: "w-full max-w-lg bg-white shadow-xl rounded-2xl overflow-hidden border border-slate-100" },
-      
-      // Header
-      React.createElement('div', { className: "bg-indigo-600 p-8 text-center" },
-        React.createElement('h1', { className: "text-3xl font-extrabold text-white mb-2" }, "Codici Amico per Sconti Luce/Gas"),
-        React.createElement('p', { className: "text-indigo-100 opacity-90 text-sm" },
-          "Trova sconti luce e gas dai tuoi amici, con affetto dalla community Telegram ",
-          React.createElement('a', { 
-            href: TELEGRAM_LINK, 
-            target: "_blank", 
-            rel: "noopener noreferrer", 
-            className: "font-bold underline text-white hover:text-indigo-200 transition-colors" 
-          }, TELEGRAM_HANDLE)
-        )
-      ),
-
-      React.createElement('div', { className: "p-8 space-y-6" },
+    // 2. Compute Brands
+    const brands = useMemo(() => {
+        // Only show brands that have at least one active (non-expired) code
+        const activeBrands = data.filter(item => !checkExpiryStatus(item.expiry).isExpired).map(item => item.brand);
+        const uniqueActive = new Set(activeBrands);
+        return Array.from(uniqueActive).sort();
         
-        // Error Message
-        error && React.createElement('div', { className: "bg-red-50 border-l-4 border-red-500 p-4 rounded flex items-start gap-3" },
-          React.createElement(AlertCircleIcon, { className: "w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" }),
-          React.createElement('div', null,
-            React.createElement('h3', { className: "text-sm font-bold text-red-800" }, "Errore Caricamento"),
-            React.createElement('p', { className: "text-xs text-red-600 mt-1" }, error),
-            React.createElement('p', { className: "text-xs text-red-600 mt-2 italic" }, "Suggerimento: Verifica che il link sia accessibile pubblicamente.")
-          )
-        ),
+    }, [data]);
 
-        // Loading State
-        loading && !error && React.createElement('div', { className: "text-center py-10 space-y-3" },
-          React.createElement('div', { className: "animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600 mx-auto" }),
-          React.createElement('p', { className: "text-slate-500 text-sm animate-pulse" }, "Caricamento codici in corso...")
-        ),
+    // 3. Generate Code Logic
+    const generateCode = () => {
+        if (!selectedBrand) return;
 
-        // Main Content
-        !loading && !error && React.createElement(React.Fragment, null,
-          // Controls
-          React.createElement('div', { className: "space-y-4" },
-            React.createElement('div', { className: "space-y-2" },
-              React.createElement('label', { className: "text-sm font-semibold text-slate-600 uppercase tracking-wide" }, "Seleziona Fornitore"),
-              React.createElement('div', { className: "relative" },
-                React.createElement('select', { 
-                  value: selectedBrand,
-                  onChange: (e) => {
-                    setSelectedBrand(e.target.value);
-                    setCurrentCode(null);
-                  },
-                  className: "w-full p-3 bg-slate-50 border border-slate-200 rounded-lg appearance-none focus:ring-2 focus:ring-indigo-500 focus:outline-none font-medium text-slate-700 transition-shadow"
-                },
-                  React.createElement('option', { value: "", disabled: true }, "Scegli il fornitore..."),
-                  brands.map(brand => React.createElement('option', { key: brand, value: brand }, brand))
-                ),
-                React.createElement('div', { className: "absolute right-3 top-3.5 pointer-events-none text-slate-400" },
-                  React.createElement('svg', { className: "w-5 h-5", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" }, 
-                    React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: "2", d: "M19 9l-7 7-7-7" })
-                  )
-                )
-              )
+        const pool = data.filter(item => item.brand === selectedBrand);
+
+        if (pool.length === 0) {
+            console.error("Nessun codice disponibile per questo fornitore.");
+            return;
+        }
+
+        // Filtra solo i codici attivi
+        const activePool = pool.filter(item => !checkExpiryStatus(item.expiry).isExpired);
+        
+        if (activePool.length === 0) {
+            console.warn("Nessun codice ATTIVO disponibile per questo fornitore.");
+            setCurrentCode({
+                brand: selectedBrand,
+                code: 'Nessun Codice Attivo',
+                value: 'N/D',
+                telegram: 'Sistema',
+                expiry: 'Oggi',
+                description: 'Tutti i codici di questo fornitore risultano scaduti.'
+            });
+            setCopySuccess(false);
+            setShowCodeAnimation(true);
+            setTimeout(() => setShowCodeAnimation(false), 1500);
+            return;
+        }
+        
+        // Seleziona casualmente da quelli attivi
+        const selectionPool = activePool;
+        const randomIndex = Math.floor(Math.random() * selectionPool.length);
+        const selected = selectionPool[randomIndex];
+        setCurrentCode(selected);
+        setCopySuccess(false);
+        
+        // Attiva l'animazione
+        setShowCodeAnimation(true);
+        setTimeout(() => setShowCodeAnimation(false), 1500);
+    };
+
+    // 4. Copy to Clipboard
+    const copyToClipboard = () => {
+        if (!currentCode || currentCode.code === 'Nessun Codice Attivo') return;
+        
+        // Se è un link, copiamo il link
+        const textToCopy = currentCode.code;
+
+        try {
+            // Use document.execCommand('copy') for maximum compatibility in iframe environment
+            const tempInput = document.createElement('textarea');
+            tempInput.value = textToCopy;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+            setCopySuccess(true);
+            setTimeout(() => setCopySuccess(false), 2000);
+        } catch (err) {
+            console.error('Impossibile copiare il testo:', err);
+        }
+    };
+
+    // Componente per visualizzare i dettagli
+    const DetailCard = ({ icon: Icon, title, value, colorClass = 'text-slate-600', isExpired = false }) => {
+        const cardClass = `p-4 rounded-lg border shadow-sm ${isExpired ? 'bg-red-50 border-red-200' : 'bg-white border-slate-100'}`;
+        const valueClass = `text-sm font-medium ${isExpired ? 'text-red-600 font-bold' : 'text-slate-800'}`;
+
+        return React.createElement('div', { className: cardClass },
+            React.createElement('div', { className: 'flex items-center space-x-2 mb-1' },
+                React.createElement(Icon, { className: `w-4 h-4 ${colorClass}` }),
+                React.createElement('p', { className: 'text-xs uppercase text-slate-400 font-semibold' }, title)
             ),
+            React.createElement('p', { className: valueClass }, value)
+        );
+    };
 
-            // Generate Button
-            React.createElement('button', { 
-              onClick: generateCode,
-              disabled: !selectedBrand,
-              className: `
-                w-full text-lg font-bold py-4 rounded-xl shadow-lg transition-all duration-200 flex items-center justify-center gap-2
-                ${!selectedBrand 
-                  ? 'bg-slate-300 text-slate-500 cursor-not-allowed shadow-none' 
-                  : 'bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white shadow-indigo-500/30'}
-              `
-            },
-              React.createElement(ZapIcon, { className: "w-6 h-6" }),
-              "Genera Codice"
-            )
-          ),
-
-
-          // 1. AREA DI VISUALIZZAZIONE PRINCIPALE
-          React.createElement('div', { className: `
-            relative border-2 rounded-xl p-6 flex flex-col items-center justify-center text-center min-h-[150px] transition-all duration-300
-            ${currentCode ? 'border-indigo-100 bg-indigo-50/50' : 'border-dashed border-slate-200 bg-slate-50/50'}
-          `},
-            !currentCode ? (
-              React.createElement('div', { className: "text-slate-400 flex flex-col items-center" },
-                React.createElement(ZapIcon, { className: "w-10 h-10 mb-3 opacity-20" }),
-                React.createElement('p', { className: "text-sm font-medium" },
-                  !selectedBrand ? 'Seleziona un fornitore per continuare' : 'Premi Genera Codice per scoprire un codice'
-                )
-              )
-            ) : (
-              React.createElement('div', { className: "w-full space-y-3 animate-in fade-in duration-500" },
-                React.createElement('span', { className: "inline-block px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs font-bold uppercase tracking-wider mb-2" },
-                  currentCode.brand
-                ),
-                React.createElement('div', { 
-                  className: `flex items-center justify-center gap-2 ${currentCode.code !== 'Nessun Codice Attivo' ? 'group cursor-pointer' : 'cursor-default'}`, 
-                  onClick: currentCode.code !== 'Nessun Codice Attivo' ? copyToClipboard : undefined 
-                },
-                  React.createElement('h2', { className: `text-3xl font-black ${currentCode.code !== 'Nessun Codice Attivo' ? 'text-slate-800' : 'text-red-500'} break-all` },
-                    currentCode.code
-                  ),
-                  currentCode.code !== 'Nessun Codice Attivo' && (
-                    copySuccess ? 
-                      React.createElement(CheckIcon, { className: "w-5 h-5 text-green-500" }) : 
-                      React.createElement(CopyIcon, { className: "w-5 h-5 text-slate-300 group-hover:text-indigo-500 transition-colors" })
-                  )
-                ),
-                React.createElement('p', { className: `text-sm font-bold ${currentCode.code !== 'Nessun Codice Attivo' ? 'text-green-600' : 'text-red-500'}` },
-                  "Valore dello sconto: ", currentCode.value
-                )
-              )
-            )
-          ),
-          
-          // 2. CARD DETTAGLI AGGIUNTIVI
-          currentCode && React.createElement('div', { className: "space-y-4 pt-4 animate-in fade-in duration-500" },
-            React.createElement('h3', { className: "text-sm font-bold text-slate-700 uppercase tracking-wider border-b border-slate-200 pb-2" }, "Dettagli del Codice"),
+    // Funzione principale App (tradotta in JS nativo)
+    return React.createElement('div', { className: "min-h-screen bg-slate-50 flex items-center justify-center p-4 font-sans text-slate-800" },
+        React.createElement('div', { className: "w-full max-w-lg bg-white shadow-xl rounded-2xl overflow-hidden border border-slate-100" },
             
-            React.createElement('div', { className: "grid grid-cols-2 gap-3" },
-              // Offerto da
-              React.createElement(DetailCard, { 
-                  icon: UserIcon, 
-                  title: "Offerto da", 
-                  value: currentCode.telegram.startsWith('@') ? currentCode.telegram : `@${currentCode.telegram}` 
-              }),
-              
-              // Stato e Scadenza
-              (() => {
-                  if (currentCode.code === 'Nessun Codice Attivo') {
-                      return React.createElement(DetailCard, { 
-                          icon: AlertCircleIcon, 
-                          title: "Stato / Scadenza", 
-                          value: `Scaduto (Tutti)`,
-                          colorClass: 'text-red-500',
-                          isExpired: true
-                      });
-                  }
-                  
-                  const { status, isExpired, display } = checkExpiryStatus(currentCode.expiry);
-                  return React.createElement(DetailCard, { 
-                      icon: CalendarIcon, 
-                      title: "Stato / Scadenza", 
-                      value: `${status} (${display})`,
-                      colorClass: isExpired ? 'text-red-500' : 'text-green-500',
-                      isExpired: isExpired
-                  });
-              })()
+            // Header
+            React.createElement('div', { className: "bg-primary-indigo p-8 text-center" },
+                React.createElement('h1', { className: "text-3xl font-extrabold text-white mb-2" }, "Codici Amico per Sconti Luce/Gas"),
+                React.createElement('p', { className: "text-indigo-100 opacity-90 text-sm" },
+                    "Trova sconti luce e gas dai tuoi amici, con affetto dalla community Telegram ",
+                    React.createElement('a', { 
+                        href: TELEGRAM_LINK, 
+                        target: "_blank", 
+                        rel: "noopener noreferrer", 
+                        className: "font-bold underline text-white hover:text-indigo-200 transition-colors" 
+                    }, TELEGRAM_HANDLE)
+                )
             ),
 
-            // Note dell'utente
-            React.createElement('div', { className: "p-4 rounded-lg border bg-white border-slate-100 shadow-sm" },
-                React.createElement('div', { className: "flex items-center space-x-2 mb-2" },
-                    React.createElement(MessageSquareIcon, { className: "w-4 h-4 text-slate-500" }),
-                    React.createElement('p', { className: "text-xs uppercase text-slate-400 font-semibold" }, "Note dell'utente")
+            React.createElement('div', { className: "p-8 space-y-6" },
+                
+                // Error Message
+                error && React.createElement('div', { className: "bg-red-50 border-l-4 border-red-500 p-4 rounded-lg flex items-start gap-3" },
+                    React.createElement(AlertCircleIcon, { className: "w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" }),
+                    React.createElement('div', null,
+                        React.createElement('h3', { className: "text-sm font-bold text-red-800" }, "Errore Caricamento"),
+                        React.createElement('p', { className: "text-xs text-red-600 mt-1" }, error),
+                        React.createElement('p', { className: "text-xs text-red-600 mt-2 italic" }, "Suggerimento: Verifica che il link sia accessibile pubblicamente.")
+                    )
                 ),
-                React.createElement('p', { className: `text-sm text-slate-700 italic ${currentCode.description ? '' : 'text-slate-400'}` },
-                    currentCode.description || "Nessuna nota aggiunta dall'utente."
+
+                // Loading State
+                loading && !error && React.createElement('div', { className: "text-center py-10 space-y-3" },
+                    React.createElement('div', { className: "animate-spin rounded-full h-10 w-10 border-b-2 border-primary-indigo mx-auto" }),
+                    React.createElement('p', { className: "text-slate-500 text-sm animate-pulse" }, "Caricamento codici in corso...")
+                ),
+
+                // Main Content
+                !loading && !error && React.createElement(React.Fragment, null,
+                    // Controls
+                    React.createElement('div', { className: "space-y-4" },
+                        React.createElement('div', { className: "space-y-2" },
+                            React.createElement('label', { className: "text-sm font-semibold text-slate-600 uppercase tracking-wide" }, "Seleziona Fornitore"),
+                            React.createElement('div', { className: "relative" },
+                                React.createElement('select', { 
+                                    value: selectedBrand,
+                                    onChange: (e) => {
+                                        setSelectedBrand(e.target.value);
+                                        setCurrentCode(null);
+                                    },
+                                    className: "w-full p-3 bg-slate-50 border border-slate-200 rounded-lg appearance-none focus:ring-2 focus:ring-primary-indigo focus:outline-none font-medium text-slate-700 transition-shadow"
+                                },
+                                    React.createElement('option', { value: "", disabled: true }, "Scegli il fornitore..."),
+                                    brands.map(brand => React.createElement('option', { key: brand, value: brand }, brand))
+                                ),
+                                React.createElement('div', { className: "absolute right-3 top-3.5 pointer-events-none text-slate-400" },
+                                    React.createElement('svg', { className: "w-5 h-5", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" }, 
+                                        React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: "2", d: "M19 9l-7 7-7-7" })
+                                    )
+                                )
+                            )
+                        ),
+
+                        // Generate Button
+                        React.createElement('button', { 
+                            onClick: generateCode,
+                            disabled: !selectedBrand,
+                            className: `
+                                w-full text-lg font-bold py-4 rounded-xl shadow-lg transition-all duration-200 flex items-center justify-center gap-2
+                                ${!selectedBrand 
+                                    ? 'bg-slate-300 text-slate-500 cursor-not-allowed shadow-none' 
+                                    : 'bg-primary-indigo hover:bg-indigo-700 active:scale-[0.98] text-white shadow-primary-indigo/30'}
+                            `
+                        },
+                            React.createElement(ZapIcon, { className: "w-6 h-6" }),
+                            "Genera Codice"
+                        )
+                    ),
+
+
+                    // 1. AREA DI VISUALIZZAZIONE PRINCIPALE
+                    React.createElement('div', { className: `
+                        relative border-2 rounded-xl p-6 flex flex-col items-center justify-center text-center min-h-[150px] transition-all duration-300
+                        ${currentCode ? 'border-indigo-100 bg-indigo-50/50' : 'border-dashed border-slate-200 bg-slate-50/50'}
+                        ${showCodeAnimation && currentCode ? 'animate-pulse-once' : ''}
+                    `},
+                        !currentCode ? (
+                            React.createElement('div', { className: "text-slate-400 flex flex-col items-center" },
+                                React.createElement(ZapIcon, { className: "w-10 h-10 mb-3 opacity-20" }),
+                                React.createElement('p', { className: "text-sm font-medium" },
+                                    !selectedBrand ? 'Seleziona un fornitore per continuare' : 'Premi Genera Codice per scoprire un codice'
+                                )
+                            )
+                        ) : (
+                            React.createElement('div', { className: "w-full space-y-3 animate-in fade-in duration-500" },
+                                React.createElement('span', { className: "inline-block px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs font-bold uppercase tracking-wider mb-2" },
+                                    currentCode.brand
+                                ),
+                                
+                                // CONTENUTO PRINCIPALE: CODICE O LINK
+                                // Se è un link, rendiamo cliccabile l'intera area di testo. Altrimenti, usiamo il gestore di copia.
+                                (() => {
+                                    const codeText = currentCode.code;
+                                    const isCodeLink = isUrl(codeText);
+                                    const isExpired = codeText === 'Nessun Codice Attivo';
+
+                                    // Elemento principale del codice/link
+                                    const codeElement = React.createElement('h2', { 
+                                        className: `text-3xl font-black break-all ${isExpired ? 'text-red-500' : (isCodeLink ? 'text-primary-indigo code-link' : 'text-slate-800')}`
+                                    }, codeText);
+
+                                    // L'elemento cliccabile
+                                    let clickableElement;
+
+                                    if (isExpired) {
+                                        clickableElement = codeElement;
+                                    } else if (isCodeLink) {
+                                        // Se è un link, lo avvolgiamo in <a>
+                                        clickableElement = React.createElement('a', {
+                                            href: codeText,
+                                            target: "_blank",
+                                            rel: "noopener noreferrer",
+                                            className: 'flex items-center justify-center gap-2 group cursor-pointer transition-transform duration-100 hover:scale-[1.01]'
+                                        },
+                                            codeElement,
+                                            React.createElement(LinkIcon, { className: "w-5 h-5 text-slate-300 group-hover:text-primary-indigo transition-colors" })
+                                        );
+                                    } else {
+                                        // Se è solo un codice, avvolgiamo l'area con la funzione di copia
+                                        clickableElement = React.createElement('div', { 
+                                            className: 'flex items-center justify-center gap-2 group cursor-pointer',
+                                            onClick: copyToClipboard 
+                                        },
+                                            codeElement,
+                                            copySuccess ? 
+                                                React.createElement(CheckIcon, { className: "w-5 h-5 text-green-500" }) : 
+                                                React.createElement(CopyIcon, { className: "w-5 h-5 text-slate-300 group-hover:text-primary-indigo transition-colors" })
+                                        );
+                                    }
+
+                                    return clickableElement;
+                                })()
+                            )
+                        )
+                    ),
+                    
+                    // 2. CARD DETTAGLI AGGIUNTIVI
+                    currentCode && React.createElement('div', { className: "space-y-4 pt-4 animate-in fade-in duration-500" },
+                        React.createElement('h3', { className: "text-sm font-bold text-slate-700 uppercase tracking-wider border-b border-slate-200 pb-2" }, "Dettagli del Codice"),
+                        
+                        React.createElement('div', { className: "grid grid-cols-2 gap-3" },
+                            // Valore dello Sconto (Spostato qui)
+                            React.createElement(DetailCard, { 
+                                icon: DollarSignIcon, 
+                                title: "Valore dello Sconto", 
+                                value: currentCode.value,
+                                colorClass: 'text-green-600'
+                            }),
+
+                            // Offerto da
+                            React.createElement(DetailCard, { 
+                                icon: UserIcon, 
+                                title: "Offerto da", 
+                                value: currentCode.telegram.startsWith('@') ? currentCode.telegram : `@${currentCode.telegram}` 
+                            }),
+                            
+                            // Stato e Scadenza
+                            (() => {
+                                // Se non c'è un codice attivo
+                                if (currentCode.code === 'Nessun Codice Attivo') {
+                                    return React.createElement(DetailCard, { 
+                                        icon: AlertCircleIcon, 
+                                        title: "Stato / Scadenza", 
+                                        value: `Scaduto (Tutti)`,
+                                        colorClass: 'text-red-500',
+                                        isExpired: true
+                                    });
+                                }
+                                
+                                // Per codice generato
+                                const { status, isExpired, display } = checkExpiryStatus(currentCode.expiry);
+                                return React.createElement(DetailCard, { 
+                                    icon: CalendarIcon, 
+                                    title: "Stato / Scadenza", 
+                                    value: `${status} (${display})`,
+                                    colorClass: isExpired ? 'text-red-500' : 'text-green-500',
+                                    isExpired: isExpired
+                                });
+                            })()
+                        ),
+
+                        // Note dell'utente
+                        React.createElement('div', { className: "p-4 rounded-lg border bg-white border-slate-100 shadow-sm" },
+                            React.createElement('div', { className: "flex items-center space-x-2 mb-2" },
+                                React.createElement(MessageSquareIcon, { className: "w-4 h-4 text-slate-500" }),
+                                React.createElement('p', { className: "text-xs uppercase text-slate-400 font-semibold" }, "Note dell'utente")
+                            ),
+                            React.createElement('p', { className: `text-sm text-slate-700 italic ${currentCode.description ? '' : 'text-slate-400'}` },
+                                currentCode.description || "Nessuna nota aggiunta dall'utente."
+                            )
+                        )
+                    ),
+                    
+                    // 3. CALL TO ACTION - Community Telegram
+                    React.createElement('div', { className: "pt-4" },
+                        React.createElement('a', { 
+                            href: TELEGRAM_LINK, 
+                            target: "_blank", 
+                            rel: "noopener noreferrer",
+                            className: "w-full flex items-center justify-center gap-3 bg-secondary-cyan hover:bg-cyan-600 text-white font-bold py-3 px-4 rounded-xl shadow-md shadow-secondary-cyan/30 transition-all duration-200 active:scale-[0.99] group"
+                        },
+                            React.createElement(SendIcon, { className: "w-5 h-5 group-hover:animate-pulse" }),
+                            "Unisciti alla Community Telegram"
+                        ),
+                        React.createElement('p', { className: "text-center text-xs text-slate-400 mt-2" },
+                            "Condividi i tuoi codici e scopri nuove offerte."
+                        )
+                    )
                 )
             )
-          ),
-          
-          // 3. CALL TO ACTION - Community Telegram
-          React.createElement('div', { className: "pt-4" },
-            React.createElement('a', { 
-                href: TELEGRAM_LINK, 
-                target: "_blank", 
-                rel: "noopener noreferrer",
-                className: "w-full flex items-center justify-center gap-3 bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-3 px-4 rounded-xl shadow-md shadow-cyan-500/30 transition-all duration-200 active:scale-[0.99] group"
-            },
-                React.createElement(SendIcon, { className: "w-5 h-5 group-hover:animate-pulse" }),
-                "Unisciti alla Community Telegram"
-            ),
-            React.createElement('p', { className: "text-center text-xs text-slate-400 mt-2" },
-                "Condividi i tuoi codici e scopri nuove offerte."
-            )
-          )
         )
-      )
-    )
-  );
+    );
 }
 
 // Inizializzazione di ReactDOM (rimane invariata)
