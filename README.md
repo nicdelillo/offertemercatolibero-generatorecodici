@@ -13,7 +13,7 @@ Dati in Tempo Reale: I dati vengono estratti direttamente e in tempo reale da un
 Verifica Scadenza: L'app verifica automaticamente la data di scadenza (se presente) di ciascun codice per presentare solo opzioni valide.
 
 
-# 💾 Dove puoi usarlo?
+# 🌐 Dove puoi usarlo?
 
 Link qui
 
