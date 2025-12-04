@@ -50,6 +50,29 @@
         .code-link:hover {
             color: #3730a3; /* indigo-800 */
         }
+
+        /* Stile per il popup modale */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 1.5rem;
+            border-radius: 0.75rem; /* rounded-xl */
+            max-width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-xl */
+        }
     </style>
 </head>
 <body>
@@ -96,6 +119,10 @@ const CalendarIcon = ({ className = "w-4 h-4" }) => React.createElement("svg", {
 const SendIcon = ({ className = "w-5 h-5" }) => React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", width: "24", height: "24", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", className: className },
     React.createElement("line", { x1: "22", y1: "2", x2: "11", y2: "13" }),
     React.createElement("polygon", { points: "22 2 15 22 11 13 2 9 22 2" })
+);
+const XIcon = ({ className = "w-5 h-5" }) => React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", width: "24", height: "24", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", className: className },
+    React.createElement("line", { x1: "18", y1: "6", x2: "6", y2: "18" }),
+    React.createElement("line", { x1: "6", y1: "6", x2: "18", y2: "18" })
 );
 // -------------------------------------------------------------------------------------
 
@@ -150,6 +177,108 @@ const isUrl = (str) => {
 };
 
 
+// Componente per visualizzare i dettagli
+const DetailCard = ({ icon: Icon, title, value, colorClass = 'text-slate-600', isExpired = false }) => {
+    const cardClass = `p-4 rounded-lg border shadow-sm ${isExpired ? 'bg-red-50 border-red-200' : 'bg-white border-slate-100'} flex flex-col items-center`;
+    const valueClass = `text-lg font-bold mt-1 ${isExpired ? 'text-red-600' : 'text-slate-800'}`;
+
+    return React.createElement('div', { className: cardClass },
+        React.createElement('div', { className: 'flex items-center space-x-2 mb-1' },
+            React.createElement(Icon, { className: `w-4 h-4 ${colorClass}` }),
+            React.createElement('p', { className: 'text-xs uppercase text-slate-400 font-semibold' }, title)
+        ),
+        React.createElement('p', { className: valueClass }, value)
+    );
+};
+
+// Componente Modale per Termini/Privacy
+const Modal = ({ title, content, onClose }) => {
+    return ReactDOM.createPortal(
+        React.createElement('div', { className: "modal-overlay", onClick: onClose },
+            React.createElement('div', { 
+                className: "modal-content transition-all duration-300 transform scale-100", 
+                onClick: (e) => e.stopPropagation() // Evita che il click sul contenuto chiuda il modale
+            },
+                React.createElement('div', { className: "flex justify-between items-start border-b pb-3 mb-4" },
+                    React.createElement('h2', { className: "text-xl font-bold text-slate-800" }, title),
+                    React.createElement('button', { 
+                        onClick: onClose,
+                        className: "p-1 rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
+                    }, 
+                        React.createElement(XIcon, null)
+                    )
+                ),
+                React.createElement('div', { className: "text-sm text-slate-600 leading-relaxed space-y-4" },
+                    content() // Esegue la funzione per il contenuto
+                )
+            )
+        ),
+        document.body
+    );
+};
+
+// Contenuto per Termini e Condizioni AGGIORNATO
+const TermsContent = () => React.createElement(React.Fragment, null,
+    React.createElement('p', null, 
+        React.createElement('strong', null, "1. Accettazione dei Termini"),
+        React.createElement('br', null),
+        "Utilizzando questo sito accetti di essere vincolato da questi termini e condizioni d'uso. Se non accetti questi termini, ti preghiamo di non utilizzare il nostro sito web.",
+    ),
+    React.createElement('p', null, 
+        React.createElement('strong', null, "2. Scopo del Servizio"),
+        React.createElement('br', null),
+        "Questa applicazione web è un semplice generatore casuale di codici amico (codici e/o link) per sconti luce e gas, forniti volontariamente dai membri della community Telegram.",
+    ),
+    React.createElement('p', null, 
+        React.createElement('strong', null, "3. Uso Appropriato"),
+        React.createElement('br', null),
+        "Gli utenti si impegnano a:",
+        React.createElement('ul', { className: "list-disc pl-5 mt-1 space-y-1" },
+            React.createElement('li', null, "Utilizzare il servizio solo per scopi legali."),
+            React.createElement('li', null, "Non tentare di danneggiare o compromettere la sicurezza del sito."),
+            React.createElement('li', null, "Non utilizzare il servizio per attività commerciali.")
+        )
+    ),
+    React.createElement('p', null, 
+        React.createElement('strong', null, "4. Limitazione di Responsabilità"),
+        React.createElement('br', null),
+        "I codici sono forniti 'così come sono'. Non garantiamo l'accuratezza, la validità o la scadenza dei codici. L'uso dei codici è a rischio esclusivo dell'utente e non ci assumiamo alcuna responsabilità per eventuali sconti mancati o problemi con i fornitori di energia.",
+    ),
+    React.createElement('p', null, 
+        React.createElement('strong', null, "5. Modifiche"),
+        React.createElement('br', null),
+        "Ci riserviamo il diritto di modificare o interrompere il servizio in qualsiasi momento senza preavviso.",
+    ),
+    React.createElement('p', null, 
+        React.createElement('strong', null, "6. Contatti"),
+        React.createElement('br', null),
+        "Per qualsiasi domanda riguardo questi termini, puoi contattarci tramite il canale telegram della community ",
+        React.createElement('a', { 
+            href: "https://t.me/offertemercatolibero", 
+            target: "_blank", 
+            rel: "noopener noreferrer", 
+            className: "font-medium text-primary-indigo hover:underline" 
+        }, "https://t.me/offertemercatolibero")
+    )
+);
+
+// Contenuto per Informativa sulla Privacy
+const PrivacyContent = () => React.createElement(React.Fragment, null,
+    React.createElement('p', null, 
+        React.createElement('strong', null, "Non Vengono Raccolti Dati Personali:"),
+        " Questo strumento è progettato per la privacy. Non raccogliamo, archiviamo o elaboriamo dati personali degli utenti, indirizzi IP, informazioni sui dispositivi o qualsiasi altra informazione che possa identificare l'utente.",
+    ),
+    React.createElement('p', null, 
+        React.createElement('strong', null, "Nessun Cookie o Tracciamento:"),
+        " Questa applicazione non utilizza cookie di tracciamento o di profilazione. Non vengono utilizzati strumenti di analisi esterni per monitorare l'uso dell'applicazione.",
+    ),
+    React.createElement('p', null, 
+        React.createElement('strong', null, "Contenuto Esterno:"),
+        " I codici amico potrebbero reindirizzare a siti web esterni (i fornitori di energia), che sono soggetti alle proprie informative sulla privacy e politiche sui cookie.",
+    )
+);
+
+
 const App = () => {
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -157,6 +286,7 @@ const App = () => {
     const [selectedBrand, setSelectedBrand] = useState('');
     const [currentCode, setCurrentCode] = useState(null);
     const [copySuccess, setCopySuccess] = useState(false);
+    const [modalType, setModalType] = useState(null); // 'terms' o 'privacy'
     
     const TELEGRAM_LINK = "https://t.me/offertemercatolibero";
     const TELEGRAM_HANDLE = "@offertemercatolibero";
@@ -312,25 +442,11 @@ const App = () => {
         }
     };
 
-    // Componente per visualizzare i dettagli
-    const DetailCard = ({ icon: Icon, title, value, colorClass = 'text-slate-600', isExpired = false }) => {
-        // Aggiungo 'text-center' qui per centrare il valore
-        const cardClass = `p-4 rounded-lg border shadow-sm ${isExpired ? 'bg-red-50 border-red-200' : 'bg-white border-slate-100'} flex flex-col items-center`;
-        // Modifica: Ridotto da text-xl a text-lg per essere "appena appena" più piccolo
-        const valueClass = `text-lg font-bold mt-1 ${isExpired ? 'text-red-600' : 'text-slate-800'}`;
-
-        return React.createElement('div', { className: cardClass },
-            React.createElement('div', { className: 'flex items-center space-x-2 mb-1' },
-                React.createElement(Icon, { className: `w-4 h-4 ${colorClass}` }),
-                React.createElement('p', { className: 'text-xs uppercase text-slate-400 font-semibold' }, title)
-            ),
-            React.createElement('p', { className: valueClass }, value)
-        );
-    };
-
     // Funzione principale App (tradotta in JS nativo)
-    return React.createElement('div', { className: "min-h-screen bg-slate-50 flex items-center justify-center p-4 font-sans text-slate-800" },
-        React.createElement('div', { className: "w-full max-w-lg bg-white shadow-xl rounded-2xl overflow-hidden border border-slate-100" },
+    return React.createElement('div', { className: "min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4 font-sans text-slate-800" },
+        
+        // Contenitore Principale (Card)
+        React.createElement('div', { className: "w-full max-w-lg bg-white shadow-xl rounded-2xl overflow-hidden border border-slate-100 mb-6" },
             
             // Header
             React.createElement('div', { className: "bg-primary-indigo p-8 text-center" },
@@ -547,7 +663,34 @@ const App = () => {
                     )
                 )
             )
-        )
+        ), // Fine Contenitore Principale (Card)
+
+        // Footer con Link per Termini e Privacy
+        React.createElement('footer', { className: "w-full max-w-lg text-center mt-4 mb-2" },
+            React.createElement('p', { className: "text-xs text-slate-500 space-x-3" },
+                // Link Termini
+                React.createElement('button', { 
+                    onClick: () => setModalType('terms'),
+                    className: "text-slate-500 hover:text-primary-indigo transition-colors underline underline-offset-2"
+                }, "Termini e Condizioni"),
+                
+                // Divisore
+                React.createElement('span', { className: "text-slate-400" }, "|"),
+
+                // Link Privacy
+                React.createElement('button', { 
+                    onClick: () => setModalType('privacy'),
+                    className: "text-slate-500 hover:text-primary-indigo transition-colors underline underline-offset-2"
+                }, "Informativa sulla Privacy")
+            )
+        ), // Fine Footer
+        
+        // Modale Condizionale
+        modalType && React.createElement(Modal, {
+            title: modalType === 'terms' ? 'Termini e Condizioni d\'Uso' : 'Informativa sulla Privacy',
+            content: modalType === 'terms' ? TermsContent : PrivacyContent,
+            onClose: () => setModalType(null)
+        })
     );
 }
 
