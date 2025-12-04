@@ -1,6 +1,6 @@
 # Generatore Codici Sconto Amico
 
-Questo è un generatore di codici sconto "porta un amico" per fornitori di luce e gas, alimentato dai dati condivisi dalla community Telegram (@offertemercatolibero)[https://t.me/offertemercatolibero].
+Questo è un generatore di codici sconto "porta un amico" per fornitori di luce e gas, alimentato dai dati condivisi dalla community Telegram (@offertemercatolibero)[https://t.me/offertemercatolibero]. Inizialmente è stato generato utilizzando Gemini.
 
 L'applicazione è interamente contenuta in un singolo file HTML (HTML, CSS e JavaScript/React) per massimizzare la portabilità e la facilità di deploy.
 
@@ -25,7 +25,7 @@ Aggiungere/Aggiornare Codici: Tutti i codici provengono direttamente dal Google 
 
 Miglioramenti al Codice: Per proporre miglioramenti al codice HTML/React, puoi aprire una Pull Request su questo repository.
 
-# Credits
+# ⭐ Credits
 
 Realizzato con ❤️ per la Community Italiana (@offertemercatolibero)[https://t.me/offertemercatolibero].
 
