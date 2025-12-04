@@ -15,7 +15,7 @@ Verifica Scadenza: L'app verifica automaticamente la data di scadenza (se presen
 
 # 🌐 Dove puoi usarlo?
 
-Link qui
+Il generatore è online su GitHub Pages https://nicdelillo.github.io/offertemercatolibero-generatorecodici/ 
 
 # 🤝 Contribuisci
 
