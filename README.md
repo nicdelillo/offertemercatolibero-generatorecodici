@@ -20,7 +20,7 @@ Verifica Scadenza: L'app verifica automaticamente la data di scadenza di ciascun
 
 Questo strumento è un servizio per la community @offertemercatolibero.
 
-Aggiungere/Aggiornare Codici: Tutti i codici provengono direttamente dal Google Sheet gestito dalla community. Per aggiungere il tuo codice o aggiornarne uno esistente, contatta gli amministratori del gruppo Telegram.
+Aggiungere/Aggiornare Codici: Tutti i codici provengono direttamente dal Google Sheet gestito dalla community. Per aggiungere il tuo codice o aggiornarne uno esistente, contatta gli amministratori del [gruppo Telegram](https://t.me/offertemercatolibero).
 
 Miglioramenti al Codice: Per proporre miglioramenti al codice HTML/React, puoi aprire una Pull Request su questo repository.
 
