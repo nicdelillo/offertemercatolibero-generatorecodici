@@ -1,4 +1,4 @@
-# Generatore Codici Sconto Amico
+# Generatore Codici Amico per Sconti Luce/Gas
 
 Questo è un generatore di codici sconto "porta un amico" per fornitori di luce e gas, alimentato dai dati condivisi dalla community Telegram [@offertemercatolibero](https://t.me/offertemercatolibero).
 
