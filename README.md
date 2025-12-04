@@ -4,11 +4,11 @@ Questo è un generatore di codici sconto "porta un amico" per fornitori di luce 
 
 L'applicazione è interamente contenuta in un singolo file HTML (HTML, CSS e JavaScript/React) che inizialmente è stato generato grazie al supporto di Gemini.
 
-# 🌐 Dove puoi usarlo?
+## 🌐 Dove puoi usarlo?
 
 Il generatore è online su GitHub Pages https://nicdelillo.github.io/offertemercatolibero-generatorecodici/ 
 
-# 🚀 Caratteristiche Principali
+## 🚀 Caratteristiche Principali
 
 Generazione Casuale: Seleziona un fornitore e genera un codice sconto attivo e non scaduto in modo casuale, garantendo una distribuzione equa dei codici.
 
@@ -16,7 +16,7 @@ I dati vengono estratti direttamente da un Google Sheet fornito dalla community.
 
 Verifica Scadenza: L'app verifica automaticamente la data di scadenza di ciascun codice per presentare solo opzioni valide.
 
-# 🤝 Contribuisci
+## 🤝 Contribuisci
 
 Questo strumento è un servizio per la community @offertemercatolibero.
 
@@ -24,6 +24,6 @@ Aggiungere/Aggiornare Codici: Tutti i codici provengono direttamente dal Google 
 
 Miglioramenti al Codice: Per proporre miglioramenti al codice HTML/React, puoi aprire una Pull Request su questo repository.
 
-# ⭐ Credits
+## ⭐ Credits
 
 Realizzato con ❤️ per la Community italiana [@offertemercatolibero](https://t.me/offertemercatolibero).
