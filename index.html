@@ -237,6 +237,18 @@ const TermsContent = () => React.createElement(React.Fragment, null,
         React.createElement('strong', null, "2. Scopo del Servizio"),
         React.createElement('br', null),
         "Questa applicazione web è un semplice generatore casuale di codici amico (codici e/o link) per sconti luce e gas, forniti volontariamente dai membri della community Telegram.",
+        // AGGIUNTA RICHIESTA (Modificata per rimuovere il corsivo)
+        React.createElement('br', null),
+        React.createElement('p', { className: "mt-2 text-slate-700" }, 
+            "Il codice sorgente è open source ed è consultabile su questa ",
+            React.createElement('a', { 
+                href: "https://github.com/nicdelillo/offertemercatolibero-generatorecodici", 
+                target: "_blank", 
+                rel: "noopener noreferrer", 
+                className: "font-medium text-primary-indigo hover:underline" 
+            }, "GitHub repo"),
+            "."
+        )
     ),
     React.createElement('p', null, 
         React.createElement('strong', null, "3. Uso Appropriato"),
