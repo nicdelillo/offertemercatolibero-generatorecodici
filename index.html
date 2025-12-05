@@ -186,15 +186,21 @@ const isUrl = (str) => {
 };
 
 
-// Componente per visualizzare i dettagli
+/**
+ * Componente per visualizzare i dettagli
+ * Ottimizzato per mobile: usa text-xl su schermi piccoli e text-sm per il displayValue in caso di scadenza.
+ * @param {object} props
+ */
 const DetailCard = ({ icon: Icon, title, value, colorClass = 'text-slate-600', isExpired = false }) => {
-    const cardClass = `p-4 rounded-lg border shadow-sm ${isExpired ? 'bg-red-50 border-red-200' : 'bg-white border-slate-100'} flex flex-col items-center`;
-    const valueClass = `text-lg font-bold mt-1 ${isExpired ? 'text-red-600' : 'text-slate-800'}`;
+    const cardClass = `p-3 sm:p-4 rounded-lg border shadow-sm ${isExpired ? 'bg-red-50 border-red-200' : 'bg-white border-slate-100'} flex flex-col items-center`;
+    
+    // Aumenta la dimensione del font su mobile per il valore
+    const valueClass = `text-xl sm:text-lg font-bold mt-1 ${isExpired ? 'text-red-600' : 'text-slate-800'} ${title.includes("Stato") ? 'text-sm' : ''}`; // Aggiunto text-sm per lo stato per ottimizzare riga
 
     return React.createElement('div', { className: cardClass },
         React.createElement('div', { className: 'flex items-center space-x-2 mb-1' },
             React.createElement(Icon, { className: `w-4 h-4 ${colorClass}` }),
-            React.createElement('p', { className: 'text-xs uppercase text-slate-400 font-semibold' }, title)
+            React.createElement('p', { className: 'text-xs uppercase text-slate-400 font-semibold text-center' }, title)
         ),
         React.createElement('p', { className: valueClass }, value)
     );
@@ -519,14 +525,15 @@ const App = () => {
             
             // Header
             React.createElement('div', { className: "bg-primary-indigo p-8 text-center" },
-                // Modifica 1: Titolo su due righe
+                // MODIFICA QUI: Titolo Adattivo per mobile (sm:text-2xl) e nowrap per la seconda riga su mobile
                 React.createElement('h1', { className: "text-3xl font-extrabold text-white mb-2" }, 
                     "Codici Amico",
                     React.createElement('br', null),
-                    "per Sconti Luce/Gas"
+                    // Uso sm:whitespace-nowrap per forzare "per Sconti Luce/Gas" a stare su una riga su schermi piccoli (almeno fino a un certo punto)
+                    React.createElement('span', { className: "text-2xl sm:text-3xl whitespace-nowrap" }, "per Sconti Luce/Gas")
                 ),
                 React.createElement('p', { className: "text-indigo-100 opacity-90 text-sm" },
-                    // MODIFICA PRECEDENTE: Descrizione più corta e con emoji
+                    // Descrizione più corta e con emoji
                     "❤️ con affetto dalla community Telegram ",
                     React.createElement('a', { 
                         href: TELEGRAM_LINK, 
@@ -706,7 +713,7 @@ const App = () => {
                                 } else if (display === 'Nessuna') {
                                     displayValue = 'Nessuna Scadenza';
                                 } else {
-                                    // Formato richiesto: "Attivo fino al --/--/--"
+                                    // Formato richiesto: "Attivo fino al --/--/--" - dovrebbe stare su una riga con text-sm
                                     displayValue = `Attivo fino al ${display}`; 
                                 }
 
