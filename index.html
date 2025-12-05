@@ -243,7 +243,6 @@ const TermsContent = () => React.createElement(React.Fragment, null,
         React.createElement('strong', null, "2. Scopo del Servizio"),
         React.createElement('br', null),
         "Questa applicazione web è un semplice generatore casuale di codici amico (codici e/o link) per sconti luce e gas, forniti volontariamente dai membri della community Telegram.",
-        // AGGIUNTA RICHIESTA (Modificata per rimuovere il corsivo)
         React.createElement('br', null),
         React.createElement('p', { className: "mt-2 text-slate-700" }, 
             "Il codice sorgente è open source ed è consultabile su questa ",
@@ -525,7 +524,7 @@ const App = () => {
             
             // Header
             React.createElement('div', { className: "bg-primary-indigo p-8 text-center" },
-                // MODIFICA QUI: Titolo Adattivo per mobile (sm:text-2xl) e nowrap per la seconda riga su mobile
+                // Titolo Adattivo per mobile (sm:text-2xl) e nowrap per la seconda riga su mobile
                 React.createElement('h1', { className: "text-3xl font-extrabold text-white mb-2" }, 
                     "Codici Amico",
                     React.createElement('br', null),
@@ -533,7 +532,6 @@ const App = () => {
                     React.createElement('span', { className: "text-2xl sm:text-3xl whitespace-nowrap" }, "per Sconti Luce/Gas")
                 ),
                 React.createElement('p', { className: "text-indigo-100 opacity-90 text-sm" },
-                    // Descrizione più corta e con emoji
                     "❤️ con affetto dalla community Telegram ",
                     React.createElement('a', { 
                         href: TELEGRAM_LINK, 
@@ -739,7 +737,6 @@ const App = () => {
                             React.createElement(SendIcon, { className: "w-5 h-5 group-hover:animate-pulse" }),
                             "Unisciti alla Community Telegram"
                         ),
-                        // TESTO AGGIORNATO QUI
                         React.createElement('p', { className: "text-center text-xs text-slate-400 mt-2" },
                             "Condividi i tuoi codici e informati sul tema bollette."
                         )
