@@ -2,7 +2,7 @@
 
 Questo è un generatore di codici sconto "porta un amico" per fornitori di luce e gas, alimentato dai dati condivisi dalla community Telegram [@offertemercatolibero](https://t.me/offertemercatolibero).
 
-L'applicazione è interamente contenuta in un singolo file HTML (HTML, CSS e JavaScript/React) che inizialmente è stato generato grazie al supporto di Gemini.
+L'applicazione è interamente contenuta in un singolo file HTML (HTML, CSS e JavaScript/React).
 
 ## 🌐 Dove puoi usarlo?
 
